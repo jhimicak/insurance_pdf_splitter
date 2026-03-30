@@ -1,0 +1,5 @@
+pymupdf
+customtkinter
+pillow
+pandas
+openpyxl
