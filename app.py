@@ -8,6 +8,68 @@ import threading
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# HTML Email Signature
+EMAIL_SIGNATURE = """
+<p style="font-family:돋움, Dotum, 굴림, Gulim, sans-serif;font-size:10pt;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;line-height:1;"><br /></p>
+<div class="dze_signature" dze_signature_index="1" dze_modified="">
+	<p style="font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;line-height:1.2;"><br /></p>
+	<p style="border-top:1px solid rgb(137, 137, 137);width:100%;height:1px;margin-bottom:30px;padding:0px;clear:both;display:block;float:left;font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);margin-top:0px;line-height:1.2;"><br /></p>
+	<table border="0" cellpadding="0" cellspacing="0" style="margin:0px;padding:30px 0px 20px;background:url('https://www.icak.or.kr/images/mail/mail_back.jpg') left top no-repeat;font-family:'맑은 고딕';border-collapse:collapse;width:504px;table-layout:fixed;overflow-wrap:break-word;word-break:normal;" summary="해외건설협회 서명">
+		<colgroup>
+		<col style="width:218px;" />
+		<col style="width:286px;" />
+		</colgroup>
+		<tbody>
+			<tr style="height:64px;">
+				<td style="width:218px;height:64px;">
+					<p style="font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;line-height:1.2;">&nbsp;</p>
+				</td>
+				<td style="margin:0px;padding:35px 0 0 36px;width:286px;height:64px;">
+					<p style="padding:10px 28px 0px 0px;margin:0px;color:rgb(102, 102, 102);font-family:굴림체;font-size:9pt;line-height:1.2;"><span style="font-size:12px;letter-spacing:-0.02rem;font-family:'맑은 고딕';">경영지원실 l 부장</span></p>
+					<p style="padding:10px 0px 0px;margin:0px;font-size:25px;letter-spacing:-0.02rem;font-family:굴림체;color:rgb(0, 0, 0);line-height:1.2;"><span style="font-family:'맑은 고딕';">정 효 진</span></p>
+				</td>
+			</tr>
+			<tr style="height:123px;">
+				<td colspan="2" style="letter-spacing:-0.02rem;font-family:'맑은 고딕';font-size:12px;margin:0px;padding:20px 0px 0px 36px;color:rgb(102, 102, 102);width:468px;height:90px;">
+					<p style="margin:0px;padding:0px 0px 8px;font-family:'맑은 고딕';font-size:9pt;color:rgb(102, 102, 102);line-height:1.2;">서울특별시 중구 세종대로9길 42, 13층 (우)04513</p>
+					<p style="margin:0px;padding:0px 0px 8px;font-family:'맑은 고딕';font-size:9pt;color:rgb(102, 102, 102);line-height:1.2;"><span style="font-weight:bold;">Tel</span> 02-3406-1158 &nbsp;&nbsp;<span style="font-weight:bold;">Mobile</span> 010-7224-3946</p>
+					<p style="margin:0px;padding:0px 0px 8px;font-family:'맑은 고딕';font-size:9pt;color:rgb(102, 102, 102);line-height:1.2;"><span style="font-weight:bold;">E-mail</span> hyojin@icak.or.kr</p>
+					<p style="margin:0px;padding:0px 0px 8px;font-family:'맑은 고딕';font-size:9pt;color:rgb(102, 102, 102);line-height:1.2;"><a target="_blank" href="https://www.icak.or.kr" style="color:#666;text-decoration:none;display:block;font-family:'맑은 고딕';">www.icak.or.kr</a></p>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<p style="font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;line-height:1.2;"><br /></p>
+	<table border="0" cellpadding="0" cellspacing="0" style="margin:30px 0px;padding:0px;background:url('https://www.icak.or.kr/images/mail/mail_ban_back.gif');font-family:'noto sans kr', sans-serif;border-collapse:collapse;width:891px;table-layout:fixed;overflow-wrap:break-word;word-break:normal;">
+		<colgroup>
+		<col style="width:485px;" />
+		<col style="width:406px;" />
+		</colgroup>
+		<tbody>
+			<tr style="height:56px;">
+				<td style="width:485px;height:56px;">
+					<p style="padding:0px 0px 0px 25px;margin:0px;font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);line-height:1.2;"><span style="padding:0 20px 0 0;"><img src="https://www.icak.or.kr/images/mail/mail_tit_01.gif" alt="주요서비스" /></span><span style="padding:5px 20px 0 0;display:inline-block;vertical-align:top;line-height:14px;"><a href="https://pf.kakao.com/_QHiQC" target="_blank" title="새창열림"><img src="https://www.icak.or.kr/images/mail/mail_kakao.gif" alt="카카오톡채널 바로가기" style="vertical-align:top;" /></a></span></p>
+				</td>
+				<td style="text-align:right;padding-right:25px;width:381px;height:56px;">
+					<p style="font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;line-height:1.2;"><img src="https://www.icak.or.kr/images/mail/mail_tit_02.gif" alt="연 500억불 수주! 4대 해외건설 강국!" /></p>
+				</td>
+			</tr>
+			<tr style="height:95px;">
+				<td colspan="2" style="width:891px;height:95px;">
+					<ul style="padding:5px 0 0 0;margin:0;padding-left:25px;">
+						<li style="float:left;list-style:none;padding-right:24px;text-align:center;font-size:12px;line-height:30px;font-family:굴림체;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;"><a href="https://www.icak.or.kr/community/onestopList" title="새창열림" target="_blank"><img src="https://www.icak.or.kr/images/mail/mail_ban_01.gif" alt="" /></a><br /><a href="https://www.icak.or.kr/community/onestopList" title="새창열림" target="_blank" style="color:#666;text-decoration:none;display:block;">원스톱 헬프데스크</a></li>
+						<li style="float:left;list-style:none;padding-right:24px;text-align:center;font-size:12px;line-height:30px;font-family:굴림체;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;"><a href="https://www.ocis.go.kr/" title="새창열림" target="_blank"><img src="https://www.icak.or.kr/images/mail/mail_ban_02.gif" alt="" /></a><br /><a style="color:#666;text-decoration:none;display:block;" href="https://www.ocis.go.kr/" title="새창열림" target="_blank">해외건설통합정보서비스(OCIS)</a></li>
+						<li style="float:left;list-style:none;text-align:center;font-size:12px;line-height:30px;font-family:굴림체;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;"><a href="https://www.icak.or.kr/html/member/joinStep" title="새창열림" target="_blank"><img src="https://www.icak.or.kr/images/mail/mail_ban_03.gif" alt="" /></a><br /><a style="color:#666;text-decoration:none;display:block;" href="https://www.icak.or.kr/html/member/joinStep" title="새창열림" target="_blank">협회회원사 가입안내</a></li>
+					</ul>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<p style="padding:0;margin:0;font-family:'맑은 고딕';font-size:20px;display:block;position:absolute;left:0;top:-9999px;z-index:1;width:100%;height:40px;line-height:40px;background-color:#333;color:#fff;font-size:20px;font-weight:700;">해외건설협회 International Contractors Association of Korea</p>
+</div>
+<p style="font-family:굴림체;font-size:9pt;color:rgb(0, 0, 0);margin-top:0px;margin-bottom:0px;line-height:1.2;"><br /></p>
+"""
+
 # Set appearance and theme
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -79,18 +141,19 @@ class App(ctk.CTk):
         smtp_frame.grid_columnconfigure((1, 3), weight=1)
 
         ctk.CTkLabel(smtp_frame, text="SMTP 서버:").grid(row=0, column=0, padx=5, pady=5)
-        self.smtp_server = ctk.CTkEntry(smtp_frame, placeholder_text="smtp.gmail.com")
+        self.smtp_server = ctk.CTkEntry(smtp_frame, placeholder_text="wblock.icak.or.kr")
         self.smtp_server.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        self.smtp_server.insert(0, "smtp.gmail.com")
+        self.smtp_server.insert(0, "wblock.icak.or.kr")
 
         ctk.CTkLabel(smtp_frame, text="포트:").grid(row=0, column=2, padx=5, pady=5)
-        self.smtp_port = ctk.CTkEntry(smtp_frame, placeholder_text="587", width=60)
+        self.smtp_port = ctk.CTkEntry(smtp_frame, placeholder_text="25", width=60)
         self.smtp_port.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
-        self.smtp_port.insert(0, "587")
+        self.smtp_port.insert(0, "25")
 
         ctk.CTkLabel(smtp_frame, text="계정(Email):").grid(row=1, column=0, padx=5, pady=5)
-        self.email_user = ctk.CTkEntry(smtp_frame, placeholder_text="example@gmail.com")
+        self.email_user = ctk.CTkEntry(smtp_frame, placeholder_text="hyojn@icak.or.kr")
         self.email_user.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.email_user.insert(0, "hyojn@icak.or.kr")
 
         ctk.CTkLabel(smtp_frame, text="발송자 이름:").grid(row=1, column=2, padx=5, pady=5)
         self.sender_name = ctk.CTkEntry(smtp_frame, placeholder_text="해외건설협회 경영지원실 정효진")
@@ -102,8 +165,9 @@ class App(ctk.CTk):
         self.email_pass.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
         ctk.CTkLabel(smtp_frame, text="발송자 메일:").grid(row=2, column=2, padx=5, pady=5)
-        self.display_email = ctk.CTkEntry(smtp_frame, placeholder_text="보이는 이메일 주소")
+        self.display_email = ctk.CTkEntry(smtp_frame, placeholder_text="hyojn@icak.or.kr")
         self.display_email.grid(row=2, column=3, padx=5, pady=5, sticky="ew")
+        self.display_email.insert(0, "hyojn@icak.or.kr")
  
         # Help hint for Gmail App Password
         help_hint = ctk.CTkLabel(smtp_frame, text="*구글 계정은 '앱 비밀번호' 필수", font=ctk.CTkFont(size=10), text_color="gray")
@@ -130,9 +194,9 @@ class App(ctk.CTk):
         self.email_subject.insert(0, "[경영지원실] {성명}님 보험료 연말정산 산출내역서입니다.")
 
         ctk.CTkLabel(template_frame, text="본문:").grid(row=1, column=0, padx=10, pady=5, sticky="n")
-        self.email_body = ctk.CTkTextbox(template_frame, height=80)
+        self.email_body = ctk.CTkTextbox(template_frame, height=100)
         self.email_body.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
-        self.email_body.insert("0.0", "안녕하세요, 경영지원실입니다.\n{성명}님의 보험료 연말정산 산출내역서를 보내드립니다.\n첨부파일을 확인해 주세요.\n\n감사합니다.")
+        self.email_body.insert("0.0", "안녕하세요, 경영지원실 정효진 부장 입니다.\n{성명}님의 보험료 연말정산 산출내역서를 보내드립니다.\n\n감사합니다.")
 
         # Action Buttons
         button_frame = ctk.CTkFrame(self.tab_email, fg_color="transparent")
@@ -201,12 +265,21 @@ class App(ctk.CTk):
 
     def run_send_test(self):
         sender = EmailSender(self.smtp_server.get(), int(self.smtp_port.get()), self.email_user.get(), self.email_pass.get())
+        
+        # HTML content conversion
+        body = self.email_body.get("0.0", tk.END).strip()
+        html_text = body.replace('\n', '<br>')
+        html_body = f"<div style='font-family: \"맑은 고딕\", \"Malgun Gothic\", sans-serif; font-size: 10pt;'>" \
+                    f"{html_text}" \
+                    f"</div><br>{EMAIL_SIGNATURE}"
+        
         success, msg = sender.send_email(
             self.email_user.get(), 
             "테스트 메일입니다.", 
-            "시스템 이메일 발송 기능이 정상 작동합니다.",
+            html_body,
             sender_name=self.sender_name.get(),
-            display_email=self.display_email.get()
+            display_email=self.display_email.get(),
+            is_html=True
         )
         if success:
             self.log("테스트 메일 발송 성공!")
@@ -278,13 +351,20 @@ class App(ctk.CTk):
                     self.email_user.get(), 
                     self.email_pass.get()
                 )
+                # HTML content conversion
+                html_text = task['body'].replace('\n', '<br>')
+                html_body = f"<div style='font-family: \"맑은 고딕\", \"Malgun Gothic\", sans-serif; font-size: 10pt;'>" \
+                            f"{html_text}" \
+                            f"</div><br>{EMAIL_SIGNATURE}"
+                
                 success, error_msg = w_sender.send_email(
                     task['receiver'], 
                     task['subject'], 
-                    task['body'], 
+                    html_body, 
                     task['attachment'],
                     sender_name=self.sender_name.get(),
-                    display_email=self.display_email.get()
+                    display_email=self.display_email.get(),
+                    is_html=True
                 )
                 return success, task['name'], error_msg
 

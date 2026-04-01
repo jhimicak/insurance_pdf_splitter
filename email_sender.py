@@ -55,7 +55,7 @@ class EmailSender:
                 pass
             self.server = None
 
-    def send_email(self, receiver_email, subject, body, attachment_path=None, use_existing_session=False, sender_name=None, display_email=None):
+    def send_email(self, receiver_email, subject, body, attachment_path=None, use_existing_session=False, sender_name=None, display_email=None, is_html=False):
         """
         Sends an email. Can use an existing session for bulk sending.
         """
@@ -68,7 +68,9 @@ class EmailSender:
                 
             msg['To'] = receiver_email
             msg['Subject'] = subject
-            msg.attach(MIMEText(body, 'plain'))
+            
+            # Use HTML if requested
+            msg.attach(MIMEText(body, 'html' if is_html else 'plain'))
 
             if attachment_path and os.path.exists(attachment_path):
                 filename = os.path.basename(attachment_path)
