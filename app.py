@@ -71,7 +71,7 @@ EMAIL_SIGNATURE = """
 """
 
 # Set appearance and theme
-ctk.set_appearance_mode("Dark")
+ctk.set_appearance_mode("Light")
 ctk.set_default_color_theme("blue")
 
 class App(ctk.CTk):
@@ -201,13 +201,16 @@ class App(ctk.CTk):
         # Action Buttons
         button_frame = ctk.CTkFrame(self.tab_email, fg_color="transparent")
         button_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
-        button_frame.grid_columnconfigure((0, 1), weight=1)
+        self.validate_button = ctk.CTkButton(button_frame, text="명단 및 파일 검증", command=self.start_validation, fg_color="#2c3e50")
+        self.validate_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
         self.test_email_button = ctk.CTkButton(button_frame, text="테스트 메일 전송", command=self.send_test_email, fg_color="gray")
-        self.test_email_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+        self.test_email_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
         self.send_all_button = ctk.CTkButton(button_frame, text="파일 매칭 및 전체 발송", command=self.start_email_sending)
-        self.send_all_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        self.send_all_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+
+        button_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
     # Functions
     def log(self, message):
@@ -235,6 +238,92 @@ class App(ctk.CTk):
         if filename:
             self.excel_entry.delete(0, tk.END)
             self.excel_entry.insert(0, filename)
+
+    def start_validation(self):
+        excel_path = self.excel_entry.get()
+        output_dir = self.output_entry.get()
+        if not excel_path or not os.path.exists(excel_path):
+            messagebox.showerror("Error", "엑셀 명단 파일을 선택하세요.")
+            return
+        if not output_dir or not os.path.exists(output_dir):
+            messagebox.showerror("Error", "PDF 결과물이 저장된 폴더를 확인하세요.")
+            return
+        
+        self.validate_button.configure(state="disabled", text="검증 중...")
+        self.log("--- 명단 및 파일 매칭 검증 시작 ---")
+        threading.Thread(target=self.run_validation_task, args=(excel_path, output_dir), daemon=True).start()
+
+    def run_validation_task(self, excel_path, output_dir):
+        try:
+            self.log(f"엑셀 파일을 분석 중: {os.path.basename(excel_path)}")
+            df = pd.read_excel(excel_path)
+            excel_entries = []
+            for _, row in df.iterrows():
+                try:
+                    serial = str(row.iloc[0]).strip()
+                    name = str(row.iloc[1]).strip()
+                    excel_entries.append({'serial': serial, 'name': name})
+                except:
+                    continue
+
+            pdf_files = [f for f in os.listdir(output_dir) if f.endswith('.pdf')]
+            pdf_metadata = []
+            for f in pdf_files:
+                basename = os.path.splitext(f)[0]
+                parts = basename.split('-')
+                if len(parts) >= 2:
+                    pdf_metadata.append({'serial': parts[0].strip(), 'name': parts[1].strip(), 'filename': f})
+
+            # 1. Match Check (Excel to File)
+            matched_count = 0
+            missing_files = []
+            for entry in excel_entries:
+                found = False
+                for pdf in pdf_metadata:
+                    if entry['serial'] == pdf['serial'] and entry['name'] == pdf['name']:
+                        found = True
+                        matched_count += 1
+                        break
+                if not found:
+                    missing_files.append(f"{entry['serial']} - {entry['name']}")
+
+            # 2. Extra Files Check (File to Excel)
+            extra_files = []
+            for pdf in pdf_metadata:
+                found = False
+                for entry in excel_entries:
+                    if entry['serial'] == pdf['serial'] and entry['name'] == pdf['name']:
+                        found = True
+                        break
+                if not found:
+                    extra_files.append(pdf['filename'])
+
+            self.log(f"검증 결과 요약:")
+            self.log(f"- 전체 엑셀 명단: {len(excel_entries)}건")
+            self.log(f"- 매칭 성공 (파일 존재): {matched_count}건")
+            
+            if missing_files:
+                self.log(f"⚠️ [누락] 엑셀에는 있으나 PDF 파일이 없는 경우 ({len(missing_files)}건):")
+                for m in missing_files:
+                    self.log(f"  > {m}")
+            
+            if extra_files:
+                self.log(f"ℹ️ [미등록] PDF 파일은 있으나 엑셀 명단에 없는 경우 ({len(extra_files)}건):")
+                for e in extra_files:
+                    self.log(f"  > {e}")
+
+            if not missing_files and not extra_files:
+                self.log("✅ 모든 명단과 파일이 완벽하게 일치합니다!")
+                messagebox.showinfo("검증 완료", "모든 명단과 파일이 일치합니다.\n발송을 진행하셔도 좋습니다.")
+            else:
+                messagebox.showwarning("검증 완료", f"검증 결과 불일치 항목이 발견되었습니다.\n로그 창을 확인해 주세요.")
+
+        except Exception as e:
+            self.log(f"검증 중 오류 발생: {str(e)}")
+            messagebox.showerror("Error", f"검증 중 오류 발생: {str(e)}")
+        finally:
+            self.log("--- 검증 종료 ---")
+            self.validate_button.configure(state="normal", text="명단 및 파일 검증")
 
     def start_pdf_processing(self):
         input_path = self.file_entry.get()
