@@ -262,7 +262,8 @@ class App(ctk.CTk):
                 try:
                     serial = str(row.iloc[0]).strip()
                     name = str(row.iloc[1]).strip()
-                    excel_entries.append({'serial': serial, 'name': name})
+                    email = str(row.iloc[2]).strip()
+                    excel_entries.append({'serial': serial, 'name': name, 'email': email})
                 except:
                     continue
 
@@ -277,12 +278,16 @@ class App(ctk.CTk):
             # 1. Match Check (Excel to File)
             matched_count = 0
             missing_files = []
+            missing_emails = []
             for entry in excel_entries:
                 found = False
                 for pdf in pdf_metadata:
                     if entry['serial'] == pdf['serial'] and entry['name'] == pdf['name']:
                         found = True
                         matched_count += 1
+                        # 추가: 매칭된 경우 이메일 주소 유효성 체크
+                        if not entry.get('email') or str(entry['email']).strip().lower() in ['nan', 'none', '']:
+                            missing_emails.append(f"{entry['serial']} - {entry['name']}")
                         break
                 if not found:
                     missing_files.append(f"{entry['serial']} - {entry['name']}")
@@ -307,16 +312,21 @@ class App(ctk.CTk):
                 for m in missing_files:
                     self.log(f"  > {m}")
             
+            if missing_emails:
+                self.log(f"📧 [이메일 누락] 파일은 있으나 엑셀에 이메일 주소가 비어있는 경우 ({len(missing_emails)}건):")
+                for e in missing_emails:
+                    self.log(f"  > {e}")
+            
             if extra_files:
                 self.log(f"ℹ️ [미등록] PDF 파일은 있으나 엑셀 명단에 없는 경우 ({len(extra_files)}건):")
                 for e in extra_files:
                     self.log(f"  > {e}")
 
-            if not missing_files and not extra_files:
-                self.log("✅ 모든 명단과 파일이 완벽하게 일치합니다!")
-                messagebox.showinfo("검증 완료", "모든 명단과 파일이 일치합니다.\n발송을 진행하셔도 좋습니다.")
+            if not missing_files and not extra_files and not missing_emails:
+                self.log("✅ 모든 명단, 파일, 이메일 주소가 완벽하게 일치합니다!")
+                messagebox.showinfo("검증 완료", "모든 데이터가 일치합니다.\n발송을 진행하셔도 좋습니다.")
             else:
-                messagebox.showwarning("검증 완료", f"검증 결과 불일치 항목이 발견되었습니다.\n로그 창을 확인해 주세요.")
+                messagebox.showwarning("검증 완료", f"검증 결과 불일치 또는 누락 항목이 발견되었습니다.\n로그 창을 확인해 주세요.")
 
         except Exception as e:
             self.log(f"검증 중 오류 발생: {str(e)}")
