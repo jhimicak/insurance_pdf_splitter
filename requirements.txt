@@ -3,3 +3,4 @@ customtkinter
 pillow
 pandas
 openpyxl
+pyinstaller
